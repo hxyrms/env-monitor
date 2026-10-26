@@ -165,12 +165,20 @@ html[data-theme="法院"] #bgDeco{opacity:1}
 .main-grid{flex:1;display:grid;grid-template-columns:clamp(300px,26.5vw,356px) minmax(0,1fr);
   gap:clamp(10px,1.2vw,16px);margin-top:clamp(10px,1.2vw,16px);min-height:0}
 .ctrl-col{display:flex;flex-direction:column;gap:clamp(10px,1.2vw,16px);min-height:0;min-width:0}
+/* 控制卡：矩阵控制 + 设备控制 并排 */
+.ctrl-row{display:grid;grid-template-columns:1fr 1fr;gap:clamp(10px,1.2vw,16px);min-width:0}
+/* 并排卡收紧尺寸，防止标题撑出列宽溢出 */
+.ctrl-row .matrix-card{min-width:0;gap:clamp(8px,1vw,12px);
+  padding:clamp(10px,1.2vw,14px) clamp(10px,1.2vw,14px)}
+.ctrl-row .matrix-card .sc-ic{width:clamp(40px,3.6vw,48px);height:clamp(40px,3.6vw,48px)}
+.ctrl-row .matrix-card b{font-size:clamp(13px,1.2vw,16px);letter-spacing:1px}
 
 /* ===== 矩阵控制卡 ===== */
 .matrix-card{display:flex;align-items:center;gap:clamp(12px,1.3vw,16px);cursor:pointer;
   border:1px solid var(--card-border);border-radius:var(--r-lg);font-family:inherit;text-align:left;
   background:var(--card);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
   box-shadow:var(--shadow);color:var(--ink-1);padding:clamp(12px,1.3vw,16px) clamp(14px,1.5vw,18px);
+  min-height:clamp(78px,7.2vw,94px);
   transition:transform .2s var(--ease),box-shadow .2s ease,background .2s;
   opacity:0;transform:translateY(14px);animation:cardIn .6s var(--ease) forwards}
 .matrix-card:hover{transform:translateY(-3px);background:var(--card-strong);
@@ -184,7 +192,7 @@ html[data-theme="法院"] #bgDeco{opacity:1}
 .matrix-card.off-mode .sc-ic{background:rgba(139,133,123,.14);color:var(--ink-3);
   box-shadow:none;border:1px solid rgba(139,133,123,.18)}
 .matrix-card.off-mode .mc-txt{opacity:.5}
-.matrix-card b{display:block;font-size:clamp(15px,1.4vw,19px);font-weight:800;letter-spacing:2px}
+.matrix-card b{display:block;font-size:clamp(15px,1.4vw,19px);font-weight:800;letter-spacing:2px;white-space:nowrap}
 .matrix-card span{display:block;font-size:clamp(10px,.95vw,12px);color:var(--ink-2);
   letter-spacing:1px;margin-top:4px}
 
@@ -201,23 +209,28 @@ html[data-theme="法院"] #bgDeco{opacity:1}
 .ac-head .ic-badge{width:clamp(36px,3.4vw,46px);height:clamp(36px,3.4vw,46px)}
 .ac-head b{font-size:clamp(14px,1.3vw,17px);font-weight:800;letter-spacing:2px}
 .ac-div{height:1px;background:linear-gradient(90deg,transparent,rgba(139,133,123,.22),transparent);flex-shrink:0}
-.ac-btns{flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(8px,1vw,12px);min-height:0}
-.abtn{display:flex;align-items:center;justify-content:center;gap:6px;padding:clamp(8px,1vw,12px) 6px;
-  border-radius:12px;cursor:pointer;font-family:inherit;font-weight:700;letter-spacing:1px;
-  font-size:clamp(12px,1vw,14px);border:1px solid rgba(139,133,123,.2);
-  background:rgba(255,255,255,.8);color:var(--ink-1);
+.ac-btns{flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(6px,.7vw,9px);min-height:0}
+.abtn{display:flex;align-items:center;justify-content:center;gap:4px;padding:clamp(8px,1vw,12px) 2px;
+  border-radius:12px;cursor:pointer;font-family:inherit;font-weight:700;letter-spacing:0;
+  font-size:clamp(10px,.85vw,12px);white-space:nowrap;border:1px solid rgba(139,133,123,.2);
+  background:rgba(255,255,255,.8);color:var(--ink-1);min-width:0;
   transition:transform .15s var(--ease),background .2s,box-shadow .2s,color .2s}
-.abtn svg{width:15px;height:15px;flex-shrink:0}
+.abtn svg{width:13px;height:13px;flex-shrink:0}
 .abtn:hover{background:#fff;box-shadow:0 6px 16px rgba(120,105,80,.16)}
 .abtn:active{transform:scale(.94)}
 .abtn.b-warn{color:var(--warn);background:rgba(255,125,0,.09);border-color:rgba(255,125,0,.3)}
 .abtn.b-warn:hover{background:rgba(255,125,0,.16)}
+.abtn.b-warn.on{background:var(--warn);color:#fff;border-color:var(--warn);
+  box-shadow:0 6px 14px rgba(255,125,0,.32)}
+.abtn.b-warn.on:hover{background:var(--warn)}
+.abtn.b-unmute{color:var(--good);background:rgba(0,178,42,.09);border-color:rgba(0,178,42,.3)}
+.abtn.b-unmute:hover{background:rgba(0,178,42,.16)}
+.abtn.b-unmute.on{background:var(--good);color:#fff;border-color:var(--good);
+  box-shadow:0 6px 14px rgba(0,178,42,.3)}
+.abtn.b-unmute.on:hover{background:var(--good)}
 .abtn.b-acc{color:var(--accent);background:rgba(120,105,80,.06)}
 .abtn.b-acc:hover{background:rgba(120,105,80,.12)}
-/* 静音态：静音按钮实色高亮，圆徽置灰半透明 */
-.audio-col.muted .b-warn{background:var(--warn);color:#fff;border-color:var(--warn);
-  box-shadow:0 6px 14px rgba(255,125,0,.32)}
-.audio-col.muted .b-warn:hover{background:var(--warn)}
+/* 静音态：圆徽置灰半透明 */
 .audio-col.muted .ac-head .ic-badge{filter:grayscale(.6);opacity:.75}
 .audio-card.off .abtn{opacity:.4;pointer-events:none}
 .audio-card.off .audio-col .ic-badge{background:rgba(139,133,123,.12)!important;color:var(--ink-3)!important;
@@ -377,6 +390,7 @@ html[data-theme="法院"] #bgDeco{opacity:1}
   .env-grid{grid-template-columns:repeat(2,1fr);gap:10px}
   .big-round{width:60px;height:60px}
   .top h1{font-size:19px}
+  .ctrl-row{grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -486,13 +500,21 @@ html[data-theme="法院"] #bgDeco{opacity:1}
 
     <!-- 左列 -->
     <div class="ctrl-col">
-      <!-- 矩阵控制 -->
-      <button class="matrix-card" id="btnMatrix">
-        <span class="sc-ic">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="19" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-        </span>
-        <span class="mc-txt"><b>矩阵控制</b><span>信号切换 · 大屏投送</span></span>
-      </button>
+      <!-- 控制卡：矩阵控制 + 设备控制 并排 -->
+      <div class="ctrl-row">
+        <button class="matrix-card" id="btnMatrix">
+          <span class="sc-ic">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="19" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          </span>
+          <span class="mc-txt"><b>矩阵控制</b></span>
+        </button>
+        <button class="matrix-card" id="btnDevice">
+          <span class="sc-ic">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01"/></svg>
+          </span>
+          <span class="mc-txt"><b>设备控制</b></span>
+        </button>
+      </div>
 
       <!-- 音频控制：无线话筒 / 有线地插 / 矩阵音频 -->
       <div class="audio-card" id="audioCard">
@@ -554,6 +576,7 @@ const IC_MIC=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-
 const IC_MICOFF=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v4M9 21h6M4 3l16 18"/></svg>`;
 const IC_PLUG=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v6M15 2v6M7 8h10v3a5 5 0 0 1-10 0zM12 16v6"/></svg>`;
 const IC_GRIDM=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg>`;
+const IC_DEVICE=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01"/></svg>`;
 const IC_VOLUP=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M16 12h5M18.5 9.5v5"/></svg>`;
 const IC_VOLDN=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M16 12h5"/></svg>`;
 Object.assign(ICONS,{ mic:IC_MIC, plug:IC_PLUG, grid:IC_GRIDM });
@@ -730,7 +753,8 @@ function renderCtrl(){
       <div class="ac-head">${badge(d,true)}<b>${d.name}</b></div>
       <div class="ac-div"></div>
       <div class="ac-btns">
-        <button class="abtn b-warn" data-act="mute" data-key="${d.key}">${IC_MICOFF}静音</button>
+        <button class="abtn b-warn ${ch.muted?'on':''}" data-act="mute" data-key="${d.key}">${IC_MICOFF}静音</button>
+        <button class="abtn b-unmute ${!ch.muted?'on':''}" data-act="unmute" data-key="${d.key}">${IC_MIC}取消</button>
         <button class="abtn b-acc" data-act="volup" data-key="${d.key}">${IC_VOLUP}音量 +</button>
         <button class="abtn b-acc" data-act="voldn" data-key="${d.key}">${IC_VOLDN}音量 −</button>
       </div>
@@ -742,6 +766,7 @@ function renderCtrl(){
   $("#btnPowerOff").classList.toggle("lit-red",!A.sysOn);
   $("#btnPowerOff").classList.toggle("dim",A.sysOn);
   $("#btnMatrix").classList.toggle("off-mode",!A.sysOn);
+  $("#btnDevice").classList.toggle("off-mode",!A.sysOn);
   $("#seqPill").classList.toggle("on",A.seqOn);
   $("#seqPill").classList.toggle("dis",!A.sysOn);
 }
@@ -751,8 +776,12 @@ $("#audioList").addEventListener("click",e=>{
   const act=b.dataset.act, k=b.dataset.key;
   const ch=audioState.ch[k], name=AUDIO.find(x=>x.key===k).name;
   if(act==="mute"){
-    ch.muted=!ch.muted;
-    toast(name+(ch.muted?" 已静音":" 已取消静音"));
+    ch.muted=true;
+    toast(name+" 已静音");
+  }
+  else if(act==="unmute"){
+    ch.muted=false;
+    toast(name+" 已取消静音");
   }
   else if(act==="volup"){ ch.vol=Math.min(100,ch.vol+5); toast(name+" 音量："+ch.vol); }
   else if(act==="voldn"){ ch.vol=Math.max(0,ch.vol-5); toast(name+" 音量："+ch.vol); }
@@ -780,6 +809,11 @@ $("#btnPowerOff").addEventListener("click",()=>{
 $("#btnMatrix").addEventListener("click",()=>{
   if(!audioState.sysOn) return toast("设备已关机，无法切换信号");
   toast("矩阵控制：信号已切换至大屏");
+});
+/* 设备控制 */
+$("#btnDevice").addEventListener("click",()=>{
+  if(!audioState.sysOn) return toast("设备已关机，无法进行设备控制");
+  toast("设备控制：一键管控会议室设备");
 });
 function renderAll(){
   renderHome(); renderCtrl();
