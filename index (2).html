@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1,viewport-fit=cover">
+<title>中控会议系统</title>
+<style>
+:root{
+  /* 干净暖白底（去脏：降棕、提亮）*/
+  --ink-1:#35302a;
+  --ink-2:#8b857b;
+  --ink-3:#b9b2a6;
+  --accent:#ff7d00;
+  --accent-2:#ffcf8b;
+  --switch-green:#00b42a;
+  --switch-green-2:#5bd890;
+  /* 背景配色（随主题切换）*/
+  --bg1:#fff8f0; --bg2:#ffefd9; --bg3:#ffe9cb;
+  --glow1:rgba(255,196,120,.55); --glow2:rgba(255,178,120,.5); --glow3:rgba(255,248,240,.55);
+  --panel1:#fffdf9; --panel2:#fff5e8;
+  --good:#00b42a;
+  --warn:#ff7d00;
+  --bad:#f53f3f;
+  --r-lg:22px;
+  --ease:cubic-bezier(.34,1.2,.5,1);
+  --card:rgba(255,255,255,.72);
+  --card-strong:rgba(255,255,255,.9);
+  --card-border:rgba(255,255,255,.9);
+  --shadow:0 8px 26px rgba(120,105,80,.12), inset 0 1px 0 rgba(255,255,255,.85);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;min-height:100%}
+body{
+  font-family:"PingFang SC","Microsoft YaHei","HarmonyOS Sans SC",system-ui,sans-serif;
+  color:var(--ink-1);user-select:none;overflow-x:hidden;
+  background:
+    radial-gradient(1000px 620px at 6% -6%, var(--glow1), transparent 60%),
+    radial-gradient(1000px 680px at 104% 108%, var(--glow2), transparent 60%),
+    radial-gradient(820px 520px at 50% 46%, var(--glow3), transparent 70%),
+    linear-gradient(135deg,var(--bg1) 0%,var(--bg2) 46%,var(--bg3) 100%);
+  background-attachment:fixed;
+}
+
+/* ===== 主题专属背景装饰层（仅「法院」主题淡入）===== */
+#bgDeco{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0;transition:opacity .55s ease}
+html[data-theme="法院"] #bgDeco{opacity:1}
+#bgDeco .deco-glow{position:absolute;left:50%;top:-10%;transform:translateX(-50%);
+  width:min(1000px,92vw);height:460px;filter:blur(4px);
+  background:radial-gradient(closest-side,rgba(200,164,92,.38),transparent 72%)}
+#bgDeco .deco-lines{position:absolute;inset:0;opacity:.5;
+  background-image:repeating-linear-gradient(90deg,rgba(158,43,37,.05) 0 1px,transparent 1px 48px)}
+#bgDeco .deco-emblem{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);
+  width:min(700px,64vw);height:min(700px,64vw);opacity:.14}
+#bgDeco .deco-corner{position:absolute;width:clamp(86px,11vw,132px);height:clamp(86px,11vw,132px);opacity:.26}
+#bgDeco .c1{top:16px;left:16px}
+#bgDeco .c2{top:16px;right:16px;transform:scaleX(-1)}
+#bgDeco .c3{bottom:16px;left:16px;transform:scaleY(-1)}
+#bgDeco .c4{bottom:16px;right:16px;transform:scale(-1)}
+#bgDeco .deco-rule{position:absolute;left:12%;right:12%;bottom:8%;height:1px;opacity:.35;
+  background:linear-gradient(90deg,transparent,rgba(200,164,92,.9),transparent)}
+#bgDeco .deco-rule::after{content:"";position:absolute;left:0;right:0;top:6px;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(200,164,92,.55),transparent)}
+
+#app{width:100%;max-width:1920px;margin:0 auto;min-height:100vh;position:relative;z-index:1;
+  display:flex;flex-direction:column;padding:clamp(12px,1.4vw,22px) clamp(14px,2.2vw,38px)}
+
+/* ===== 顶栏 ===== */
+.top{display:flex;align-items:center;gap:clamp(12px,1.8vw,26px);flex-wrap:wrap}
+.title-wrap{padding-top:2px}
+.top h1{font-size:clamp(19px,1.8vw,28px);font-weight:800;letter-spacing:2px}
+.top .sub{width:54px;height:4px;border-radius:2px;margin-top:7px;
+  background:linear-gradient(90deg,var(--accent-2),transparent)}
+.clock{text-align:center;line-height:1.05;flex:1;min-width:110px}
+.clock .t{font-size:clamp(22px,2.1vw,34px);font-weight:800;letter-spacing:3px;
+  font-variant-numeric:tabular-nums}
+.clock .d{font-size:clamp(11px,.95vw,14px);color:var(--ink-2);margin-top:4px;letter-spacing:1px}
+.top-right{display:flex;align-items:center;gap:clamp(10px,1.2vw,16px);flex-wrap:wrap;margin-left:auto}
+
+/* 时序开关（胶囊开关）*/
+.seq-pill{display:flex;align-items:center;gap:10px;padding:8px 14px;border-radius:99px;
+  background:var(--card);border:1px solid var(--card-border);
+  backdrop-filter:blur(10px);box-shadow:var(--shadow);
+  font-size:clamp(11px,.95vw,13px);font-weight:700;letter-spacing:1px;cursor:pointer;user-select:none;
+  transition:transform .2s var(--ease),background .2s}
+.seq-pill:hover{background:var(--card-strong);transform:translateY(-1px)}
+.seq-pill:active{transform:scale(.96)}
+.seq-pill.dis{opacity:.5;pointer-events:none}
+.seq-pill .sw{width:38px;height:21px;border-radius:99px;background:rgba(139,133,123,.3);
+  position:relative;flex-shrink:0;transition:background .25s ease}
+.seq-pill .sw::after{content:"";position:absolute;top:3px;left:3px;width:15px;height:15px;border-radius:50%;
+  background:#fff;box-shadow:0 2px 5px rgba(0,0,0,.22);transition:left .25s var(--ease)}
+.seq-pill.on .sw{background:linear-gradient(135deg,var(--switch-green-2),var(--switch-green))}
+.seq-pill.on .sw::after{left:20px}
+
+/* 顶栏开关机圆钮（双态）*/
+.big-round{width:clamp(58px,4.8vw,70px);height:clamp(58px,4.8vw,70px);border:none;cursor:pointer;border-radius:50%;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  font-family:inherit;flex-shrink:0;
+  transition:transform .2s var(--ease),box-shadow .2s ease,filter .25s,opacity .25s,background .25s}
+.big-round:active{transform:scale(.93)}
+.big-round svg{width:26%;height:26%}
+.big-round b{font-size:clamp(10px,.85vw,12px);letter-spacing:1px;white-space:nowrap}
+.big-round.on{color:var(--good);background:var(--card);border:1.5px solid rgba(0,178,42,.35);
+  backdrop-filter:blur(14px);box-shadow:var(--shadow)}
+.big-round.on.lit{color:#fff;background:linear-gradient(145deg,var(--switch-green-2),var(--switch-green));
+  border-color:transparent;box-shadow:0 8px 20px rgba(0,180,42,.38),inset 0 2px 0 rgba(255,255,255,.35)}
+.big-round.shutdown{color:var(--bad);background:var(--card);border:1.5px solid rgba(245,63,63,.35);
+  backdrop-filter:blur(14px);box-shadow:var(--shadow)}
+.big-round.shutdown.lit-red{color:#fff;background:linear-gradient(145deg,#ff8a7a,#f53f3f);
+  border-color:transparent;box-shadow:0 8px 20px rgba(245,63,63,.4),inset 0 2px 0 rgba(255,255,255,.3)}
+.big-round.on:hover:not(.lit){transform:translateY(-3px);background:rgba(0,178,42,.08)}
+.big-round.shutdown:hover:not(.lit-red){transform:translateY(-3px)}
+.big-round.lit:hover,.big-round.lit-red:hover{transform:translateY(-3px)}
+.big-round.dim{filter:grayscale(.8);opacity:.5}
+
+/* 主题切换器（按钮+下拉）*/
+.theme-dd{position:relative;z-index:70}
+.theme-btn{display:flex;align-items:center;gap:8px;padding:clamp(7px,1vw,10px) clamp(12px,1.2vw,16px);
+  border-radius:99px;border:1px solid var(--card-border);cursor:pointer;
+  font-size:clamp(11px,.95vw,13px);font-weight:700;color:var(--ink-1);font-family:inherit;
+  background:var(--card);backdrop-filter:blur(10px);box-shadow:var(--shadow);
+  transition:transform .2s var(--ease),background .2s}
+.theme-btn:hover{background:var(--card-strong);transform:translateY(-1px)}
+.theme-btn>svg{width:12px;height:12px;transition:transform .25s var(--ease)}
+.theme-dd.open .theme-btn>svg{transform:rotate(180deg)}
+.theme-cur{width:14px;height:14px;border-radius:50%;flex-shrink:0;
+  border:2px solid rgba(255,255,255,.85);box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.theme-menu{position:absolute;right:0;top:calc(100% + 8px);min-width:158px;padding:6px;border-radius:16px;
+  background:rgba(255,255,255,.96);border:1px solid rgba(139,133,123,.18);
+  box-shadow:0 18px 40px rgba(80,65,45,.24);backdrop-filter:blur(14px);
+  opacity:0;transform:translateY(-6px) scale(.98);pointer-events:none;
+  transition:opacity .22s ease,transform .22s var(--ease)}
+.theme-dd.open .theme-menu{opacity:1;transform:none;pointer-events:auto}
+.theme-item{display:flex;align-items:center;gap:9px;width:100%;padding:8px 11px;border:none;background:none;
+  border-radius:10px;cursor:pointer;font-size:13px;color:var(--ink-1);text-align:left;font-family:inherit}
+.theme-item:hover{background:rgba(139,133,123,.1)}
+.theme-item .theme-cur{width:15px;height:15px}
+.theme-item.active{font-weight:800;background:rgba(139,133,123,.12)}
+.theme-item .chk{margin-left:auto;width:14px;height:14px;color:var(--accent);opacity:0;flex-shrink:0}
+.theme-item.active .chk{opacity:1}
+
+/* 自定义背景（按钮+下拉，样式与主题一致）*/
+.bg-dd{position:relative;z-index:70}
+.bg-btn{display:flex;align-items:center;gap:8px;padding:clamp(7px,1vw,10px) clamp(12px,1.2vw,16px);
+  border-radius:99px;border:1px solid var(--card-border);cursor:pointer;
+  font-size:clamp(11px,.95vw,13px);font-weight:700;color:var(--ink-1);font-family:inherit;
+  background:var(--card);backdrop-filter:blur(10px);box-shadow:var(--shadow);
+  transition:transform .2s var(--ease),background .2s}
+.bg-btn:hover{background:var(--card-strong);transform:translateY(-1px)}
+.bg-btn>svg{width:14px;height:14px;flex-shrink:0}
+.bg-btn>svg.chev{width:12px;height:12px;transition:transform .25s var(--ease)}
+.bg-dd.open .bg-btn>svg.chev{transform:rotate(180deg)}
+.bg-dd .theme-menu{min-width:168px}
+.bg-dd.open .theme-menu{opacity:1;transform:none;pointer-events:auto}
+.bg-state{font-size:10px;color:var(--accent);margin-left:auto;opacity:0;flex-shrink:0}
+.bg-dd.has-bg .bg-state{opacity:1}
+/* 自定义背景图层 */
+#bgCustom{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-size:cover;background-position:center;background-repeat:no-repeat;
+  opacity:0;transition:opacity .5s ease}
+#bgCustom.on{opacity:1}
+#bgCustom::after{content:"";position:absolute;inset:0;background:rgba(255,255,255,.28)}
+
+/* ===== 主体：左控制列 + 右环境监测 ===== */
+.main-grid{flex:1;display:grid;grid-template-columns:clamp(300px,26.5vw,356px) minmax(0,1fr);
+  gap:clamp(10px,1.2vw,16px);margin-top:clamp(10px,1.2vw,16px);min-height:0}
+.ctrl-col{display:flex;flex-direction:column;gap:clamp(10px,1.2vw,16px);min-height:0;min-width:0}
+/* 控制卡：矩阵控制 + 设备控制 并排 */
+.ctrl-row{display:grid;grid-template-columns:1fr 1fr;gap:clamp(10px,1.2vw,16px);min-width:0}
+/* 并排卡收紧尺寸，防止标题撑出列宽溢出 */
+.ctrl-row .matrix-card{min-width:0;gap:clamp(8px,1vw,12px);
+  padding:clamp(10px,1.2vw,14px) clamp(10px,1.2vw,14px)}
+.ctrl-row .matrix-card .sc-ic{width:clamp(40px,3.6vw,48px);height:clamp(40px,3.6vw,48px)}
+.ctrl-row .matrix-card b{font-size:clamp(13px,1.2vw,16px);letter-spacing:1px}
+
+/* ===== 矩阵控制卡 ===== */
+.matrix-card{display:flex;align-items:center;gap:clamp(12px,1.3vw,16px);cursor:pointer;
+  border:1px solid var(--card-border);border-radius:var(--r-lg);font-family:inherit;text-align:left;
+  background:var(--card);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
+  box-shadow:var(--shadow);color:var(--ink-1);padding:clamp(12px,1.3vw,16px) clamp(14px,1.5vw,18px);
+  min-height:clamp(78px,7.2vw,94px);
+  transition:transform .2s var(--ease),box-shadow .2s ease,background .2s;
+  opacity:0;transform:translateY(14px);animation:cardIn .6s var(--ease) forwards}
+.matrix-card:hover{transform:translateY(-3px);background:var(--card-strong);
+  box-shadow:0 16px 36px rgba(120,105,80,.2)}
+.matrix-card:active{transform:scale(.97)}
+.matrix-card .sc-ic{width:clamp(46px,4.2vw,58px);height:clamp(46px,4.2vw,58px);border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(145deg,var(--accent-2),var(--accent));color:#fff;
+  box-shadow:0 8px 20px rgba(120,105,80,.3)}
+.matrix-card .sc-ic svg{width:48%;height:48%}
+.matrix-card.off-mode .sc-ic{background:rgba(139,133,123,.14);color:var(--ink-3);
+  box-shadow:none;border:1px solid rgba(139,133,123,.18)}
+.matrix-card.off-mode .mc-txt{opacity:.5}
+.matrix-card b{display:block;font-size:clamp(15px,1.4vw,19px);font-weight:800;letter-spacing:2px;white-space:nowrap}
+.matrix-card span{display:block;font-size:clamp(10px,.95vw,12px);color:var(--ink-2);
+  letter-spacing:1px;margin-top:4px}
+
+/* ===== 音频控制卡（三路竖排）===== */
+.audio-card{flex:1;min-height:0;min-width:0;
+  background:var(--card);border:1px solid var(--card-border);border-radius:var(--r-lg);
+  backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);box-shadow:var(--shadow);
+  padding:clamp(12px,1.4vw,18px) clamp(12px,1.4vw,16px);display:flex;flex-direction:column;gap:clamp(8px,1vw,12px);
+  opacity:0;transform:translateY(14px);animation:cardIn .6s var(--ease) .1s forwards}
+.audio-col{flex:1;min-height:0;background:rgba(255,255,255,.62);border:1px solid rgba(139,133,123,.14);
+  border-radius:16px;padding:clamp(8px,1vw,12px) clamp(10px,1.2vw,14px);
+  display:flex;flex-direction:column;gap:clamp(6px,.8vw,10px)}
+.ac-head{display:flex;align-items:center;gap:clamp(8px,1vw,12px);flex-shrink:0}
+.ac-head .ic-badge{width:clamp(36px,3.4vw,46px);height:clamp(36px,3.4vw,46px)}
+.ac-head b{font-size:clamp(14px,1.3vw,17px);font-weight:800;letter-spacing:2px}
+.ac-div{height:1px;background:linear-gradient(90deg,transparent,rgba(139,133,123,.22),transparent);flex-shrink:0}
+.ac-btns{flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(6px,.7vw,9px);min-height:0}
+.abtn{display:flex;align-items:center;justify-content:center;gap:4px;padding:clamp(8px,1vw,12px) 2px;
+  border-radius:12px;cursor:pointer;font-family:inherit;font-weight:700;letter-spacing:0;
+  font-size:clamp(10px,.85vw,12px);white-space:nowrap;border:1px solid rgba(139,133,123,.2);
+  background:rgba(255,255,255,.8);color:var(--ink-1);min-width:0;
+  transition:transform .15s var(--ease),background .2s,box-shadow .2s,color .2s}
+.abtn svg{width:13px;height:13px;flex-shrink:0}
+.abtn:hover{background:#fff;box-shadow:0 6px 16px rgba(120,105,80,.16)}
+.abtn:active{transform:scale(.94)}
+.abtn.b-warn{color:var(--warn);background:rgba(255,125,0,.09);border-color:rgba(255,125,0,.3)}
+.abtn.b-warn:hover{background:rgba(255,125,0,.16)}
+.abtn.b-warn.on{background:var(--warn);color:#fff;border-color:var(--warn);
+  box-shadow:0 6px 14px rgba(255,125,0,.32)}
+.abtn.b-warn.on:hover{background:var(--warn)}
+.abtn.b-unmute{color:var(--good);background:rgba(0,178,42,.09);border-color:rgba(0,178,42,.3)}
+.abtn.b-unmute:hover{background:rgba(0,178,42,.16)}
+.abtn.b-unmute.on{background:var(--good);color:#fff;border-color:var(--good);
+  box-shadow:0 6px 14px rgba(0,178,42,.3)}
+.abtn.b-unmute.on:hover{background:var(--good)}
+.abtn.b-acc{color:var(--accent);background:rgba(120,105,80,.06)}
+.abtn.b-acc:hover{background:rgba(120,105,80,.12)}
+/* 静音态：圆徽置灰半透明 */
+.audio-col.muted .ac-head .ic-badge{filter:grayscale(.6);opacity:.75}
+.audio-card.off .abtn{opacity:.4;pointer-events:none}
+.audio-card.off .audio-col .ic-badge{background:rgba(139,133,123,.12)!important;color:var(--ink-3)!important;
+  box-shadow:none!important;border-color:rgba(139,133,123,.2)!important}
+
+/* ===== 右侧：环境监测面板 ===== */
+.env-panel{min-height:0;min-width:0;display:flex;flex-direction:column;gap:clamp(8px,1vw,12px);
+  background:var(--card);border:1px solid var(--card-border);border-radius:var(--r-lg);
+  backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);box-shadow:var(--shadow);
+  padding:clamp(10px,1.2vw,16px) clamp(12px,1.4vw,18px);
+  opacity:0;transform:translateY(14px);animation:cardIn .6s var(--ease) .06s forwards}
+.env-head{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.env-head i{width:4px;height:18px;border-radius:2px;
+  background:linear-gradient(180deg,var(--accent-2),var(--accent))}
+.env-head b{font-size:clamp(15px,1.4vw,19px);font-weight:800;letter-spacing:2px}
+.env-grid{flex:1;display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:1fr;
+  gap:clamp(8px,1vw,14px);min-height:0}
+
+/* ===== 传感器卡片 ===== */
+.card{background:var(--card-strong);border:1px solid var(--card-border);border-radius:18px;
+  backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
+  padding:clamp(8px,.9vw,12px) clamp(10px,1.1vw,14px);display:flex;flex-direction:column;
+  position:relative;cursor:pointer;min-height:0;
+  transition:transform .2s var(--ease),box-shadow .2s ease,background .2s ease;
+  opacity:0;transform:translateY(16px);animation:cardIn .6s var(--ease) forwards}
+@keyframes cardIn{to{opacity:1;transform:translateY(0)}}
+.card:hover{transform:translateY(-3px);
+  box-shadow:0 14px 34px rgba(120,105,80,.2),inset 0 1px 0 rgba(255,255,255,.9)}
+.card:active{transform:scale(.975)}
+.row1{display:flex;align-items:center;justify-content:space-between}
+.type{font-size:clamp(10px,.9vw,12px);color:var(--ink-2);letter-spacing:1px}
+
+/* 状态标识：正常/偏高/超标/停用 都有明确标记 */
+.tag{font-size:clamp(10px,.85vw,12px);padding:3px 10px;border-radius:99px;font-weight:700;
+  white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
+.tag::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.tag.good{color:var(--good);background:rgba(0,178,42,.1);border:1px solid rgba(0,178,42,.3)}
+.tag.warn{color:var(--warn);background:rgba(255,125,0,.1);border:1px solid rgba(255,125,0,.3)}
+.tag.bad{color:var(--bad);background:rgba(245,63,63,.1);border:1px solid rgba(245,63,63,.3)}
+.tag.off{color:var(--ink-2);background:rgba(139,133,123,.1);border:1px solid rgba(139,133,123,.3)}
+
+/* ===== 彩色 icon 圆徽（干净配色：默认淡底彩标，点亮实色彩标白图）===== */
+.media{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:clamp(3px,.5vw,7px);padding:clamp(3px,.5vw,8px) 0;min-height:0}
+.ic-badge{width:clamp(44px,4vw,58px);height:clamp(44px,4vw,58px);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  background:var(--cbg);color:var(--c);border:1.5px solid var(--cborder);
+  transition:background .3s ease,box-shadow .3s ease,transform .3s var(--ease),color .3s ease,border-color .3s ease}
+.ic-badge svg{width:46%;height:46%}
+.ic-badge.on{background:linear-gradient(145deg,var(--c),var(--cd));color:#fff;
+  border-color:rgba(255,255,255,.28);box-shadow:0 8px 22px var(--cglow)}
+.card:active .ic-badge{transform:scale(.92)}
+.dev-name{font-size:clamp(13px,1.15vw,16px);font-weight:700;letter-spacing:1px;text-align:center}
+.val{font-size:clamp(16px,1.55vw,22px);font-weight:800;font-variant-numeric:tabular-nums;
+  line-height:1;text-align:center;white-space:nowrap}
+.val small{font-size:clamp(10px,.95vw,12px);font-weight:600;color:var(--ink-2);margin-left:4px}
+.foot{display:flex;align-items:center;justify-content:flex-end;
+  margin-top:clamp(5px,.7vw,8px);padding-top:clamp(5px,.7vw,7px);
+  border-top:1px solid rgba(139,133,123,.14);
+  font-size:clamp(10px,.85vw,11px);color:var(--ink-3);letter-spacing:.5px}
+.foot span{display:flex;align-items:center;gap:5px}
+.foot svg{width:12px;height:12px;opacity:.75}
+.card.off .media,.card.off .val{opacity:.45;filter:grayscale(.6)}
+.card.off .ic-badge{background:rgba(139,133,123,.12)!important;color:var(--ink-3)!important;
+  box-shadow:none!important;transform:scale(.94)}
+
+/* ===== 右侧详情抽屉面板 ===== */
+#panelWrap{position:fixed;inset:0;z-index:60;pointer-events:none}
+#panelWrap .backdrop{position:absolute;inset:0;background:rgba(29,33,41,.36);
+  backdrop-filter:blur(3px);opacity:0;transition:opacity .35s ease}
+#panelWrap.open{pointer-events:auto}
+#panelWrap.open .backdrop{opacity:1}
+.panel{position:absolute;top:0;right:0;height:100%;width:min(420px,94vw);
+  background:linear-gradient(180deg,var(--panel1),var(--panel2));
+  border-left:1px solid rgba(29,33,41,.08);
+  box-shadow:-24px 0 60px rgba(29,33,41,.22);
+  transform:translateX(102%);transition:transform .45s var(--ease);
+  display:flex;flex-direction:column;overflow-y:auto}
+#panelWrap.open .panel{transform:translateX(0)}
+.panel-head{display:flex;align-items:center;justify-content:space-between;
+  padding:20px 22px 0;flex-shrink:0}
+.panel-head h3{font-size:20px;font-weight:800;letter-spacing:1px}
+.panel-close{width:34px;height:34px;border:none;border-radius:50%;cursor:pointer;
+  background:rgba(139,133,123,.12);color:var(--ink-2);display:flex;align-items:center;justify-content:center;
+  transition:transform .2s var(--ease),background .2s}
+.panel-close:hover{background:rgba(139,133,123,.22);transform:rotate(90deg)}
+.panel-close svg{width:15px;height:15px}
+.panel-meta{display:flex;align-items:center;gap:10px;padding:10px 22px 0;
+  font-size:12px;color:var(--ink-2)}
+.panel-meta .on-tag{color:var(--good);background:rgba(0,178,42,.12);
+  border:1px solid rgba(0,178,42,.3);padding:3px 11px;border-radius:99px;font-weight:700;font-size:11px}
+.panel-meta .on-tag.off{color:var(--ink-2);background:rgba(139,133,123,.1);border-color:rgba(139,133,123,.3)}
+.panel-hero{display:flex;justify-content:center;padding:20px 0 6px}
+.panel-hero .ic-badge{width:88px;height:88px}
+.panel-hero .ic-badge svg{width:44%;height:44%}
+.panel-body{padding:6px 22px 22px;display:flex;flex-direction:column;gap:16px;flex:1}
+.sec-title{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;color:var(--ink-1);letter-spacing:1px}
+.sec-title svg{width:15px;height:15px;color:var(--accent)}
+.panel-rows{display:flex;flex-direction:column;gap:9px}
+.prow{display:flex;align-items:center;justify-content:space-between;
+  background:rgba(255,255,255,.75);border:1px solid rgba(139,133,123,.14);border-radius:14px;
+  padding:12px 16px;font-size:13px;color:var(--ink-2)}
+.prow .lbl{display:flex;align-items:center;gap:8px}
+.prow .lbl i{width:3px;height:14px;border-radius:2px;background:var(--accent);display:inline-block}
+.prow b{color:var(--ink-1);font-weight:800;font-variant-numeric:tabular-nums}
+.switch{width:50px;height:27px;border-radius:99px;background:rgba(139,133,123,.3);border:none;cursor:pointer;
+  position:relative;transition:background .25s ease;flex-shrink:0}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;
+  background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.22);transition:left .25s var(--ease)}
+.switch.on{background:linear-gradient(135deg,var(--switch-green-2),var(--switch-green))}
+.switch.on::after{left:26px}
+.p-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.p-card{border-radius:14px;padding:12px 14px;font-size:11px;color:var(--ink-2)}
+.p-card b{display:block;font-size:20px;font-weight:800;color:var(--ink-1);margin-top:4px;
+  font-variant-numeric:tabular-nums}
+.p-card small{font-size:11px;font-weight:600;color:var(--ink-2);margin-left:2px}
+.p-slider-lbl{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-2);margin-bottom:7px}
+.p-slider-lbl b{color:var(--ink-1);font-weight:800}
+.range{-webkit-appearance:none;appearance:none;width:100%;height:5px;border-radius:3px;outline:none;
+  background:linear-gradient(90deg,var(--accent) var(--fill,50%),rgba(139,133,123,.2) var(--fill,50%))}
+.range::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#fff;
+  border:3px solid var(--accent);box-shadow:0 2px 6px rgba(0,0,0,.18);cursor:pointer}
+.range::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid var(--accent);cursor:pointer}
+.range:disabled{opacity:.3;pointer-events:none}
+.panel-save{margin-top:auto;padding-top:6px}
+.panel-save button{width:100%;padding:14px;border:none;border-radius:14px;cursor:pointer;
+  font-size:15px;font-weight:800;letter-spacing:2px;color:#fff;
+  background:linear-gradient(135deg,var(--accent-2),var(--accent));
+  box-shadow:0 8px 22px rgba(120,105,80,.28);
+  transition:transform .2s var(--ease),filter .2s}
+.panel-save button:hover{filter:brightness(1.06)}
+.panel-save button:active{transform:scale(.97)}
+
+#toast{position:fixed;left:50%;bottom:40px;transform:translateX(-50%) translateY(20px);
+  background:rgba(53,48,42,.9);color:#fff;font-size:14px;letter-spacing:1px;padding:12px 26px;
+  border-radius:99px;backdrop-filter:blur(10px);opacity:0;pointer-events:none;
+  transition:all .35s var(--ease);z-index:99}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ===== 响应式 ===== */
+@media (max-width:1024px){
+  .main-grid{grid-template-columns:1fr}
+  .env-grid{grid-template-columns:repeat(3,1fr)}
+  .audio-card{order:2}
+  .env-panel{order:1}
+  .ac-btns{min-height:44px}
+  .audio-col{min-height:120px}
+  .clock{flex-basis:100%;order:3;margin-top:4px}
+}
+@media (max-width:768px){
+  #app{padding:12px 12px 20px}
+  .env-grid{grid-template-columns:repeat(2,1fr)}
+  .top-right{width:100%;margin-left:0;justify-content:space-between}
+  .clock{order:0;flex-basis:auto;flex:1;text-align:right}
+}
+@media (max-width:430px){
+  .env-grid{grid-template-columns:repeat(2,1fr);gap:10px}
+  .big-round{width:60px;height:60px}
+  .top h1{font-size:19px}
+  .ctrl-row{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- 自定义上传背景图层 -->
+<div id="bgCustom" aria-hidden="true"></div>
+
+<!-- 主题专属背景装饰（法院主题：法徽天平纹样 + 回纹角花 + 柱纹 + 金晕） -->
+<div id="bgDeco" aria-hidden="true">
+  <div class="deco-glow"></div>
+  <div class="deco-lines"></div>
+  <svg class="deco-emblem" viewBox="0 0 200 200" fill="none">
+    <circle cx="100" cy="100" r="94" stroke="#9e2b25" stroke-width="1.2" opacity=".55"/>
+    <circle cx="100" cy="100" r="86" stroke="#c8a45c" stroke-width="7" stroke-dasharray="2.4 7.6" opacity=".85"/>
+    <circle cx="100" cy="100" r="72" stroke="#c8a45c" stroke-width="1" opacity=".5"/>
+    <g stroke="#9e2b25" stroke-width="3" stroke-linecap="round">
+      <path d="M100 60v84"/>
+      <path d="M56 80h88"/>
+      <path d="M62 80v14M138 80v14"/>
+      <path d="M46 96q16 26 32 0"/>
+      <path d="M122 96q16 26 32 0"/>
+      <path d="M82 146h36"/>
+      <path d="M92 150h16"/>
+    </g>
+    <circle cx="100" cy="56" r="5" fill="#c8a45c" stroke="none" opacity=".9"/>
+    <path d="M100 40l3.2 6.6 7.2 1-5.2 5.1 1.2 7.2-6.4-3.4-6.4 3.4 1.2-7.2-5.2-5.1 7.2-1z" fill="#c8a45c" opacity=".8"/>
+  </svg>
+  <svg class="deco-corner c1" viewBox="0 0 100 100" fill="none" stroke="#c8a45c" stroke-width="2.2" stroke-linecap="square">
+    <path d="M2 2h72M2 2v72M14 14h44M14 14v44M26 26h22M26 26v22"/>
+    <circle cx="2" cy="2" r="4" fill="#9e2b25" stroke="none" opacity=".7"/>
+  </svg>
+  <svg class="deco-corner c2" viewBox="0 0 100 100" fill="none" stroke="#c8a45c" stroke-width="2.2" stroke-linecap="square">
+    <path d="M2 2h72M2 2v72M14 14h44M14 14v44M26 26h22M26 26v22"/>
+    <circle cx="2" cy="2" r="4" fill="#9e2b25" stroke="none" opacity=".7"/>
+  </svg>
+  <svg class="deco-corner c3" viewBox="0 0 100 100" fill="none" stroke="#c8a45c" stroke-width="2.2" stroke-linecap="square">
+    <path d="M2 2h72M2 2v72M14 14h44M14 14v44M26 26h22M26 26v22"/>
+    <circle cx="2" cy="2" r="4" fill="#9e2b25" stroke="none" opacity=".7"/>
+  </svg>
+  <svg class="deco-corner c4" viewBox="0 0 100 100" fill="none" stroke="#c8a45c" stroke-width="2.2" stroke-linecap="square">
+    <path d="M2 2h72M2 2v72M14 14h44M14 14v44M26 26h22M26 26v22"/>
+    <circle cx="2" cy="2" r="4" fill="#9e2b25" stroke="none" opacity=".7"/>
+  </svg>
+  <div class="deco-rule"></div>
+</div>
+
+<div id="app">
+
+  <!-- ============ 顶栏：标题 + 时钟 + 时序开关 + 开关机 + 主题 ============ -->
+  <div class="top">
+    <div class="title-wrap">
+      <h1>中控会议系统</h1>
+      <div class="sub"></div>
+    </div>
+    <div class="clock">
+      <div class="t" id="clockT">--:--</div>
+      <div class="d" id="clockD">----年--月--日</div>
+    </div>
+    <div class="top-right">
+      <div class="theme-dd" id="themeDD">
+        <button class="theme-btn" id="themeBtn">
+          <span class="theme-cur" id="themeCurDot"></span>
+          <span id="themeCurName">活力橙</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="theme-menu" id="themeMenu"></div>
+      </div>
+
+      <!-- 自定义背景 -->
+      <div class="bg-dd" id="bgDD">
+        <button class="bg-btn" id="bgBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="8.5" cy="9.5" r="1.6"/><path d="M21 16.5l-5-5-6.5 6.5"/></svg>
+          <span>背景</span>
+          <span class="bg-state">已启用</span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="theme-menu">
+          <button class="theme-item" id="bgUpload">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+            上传背景图
+          </button>
+          <button class="theme-item" id="bgRemove">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg>
+            移除背景图
+          </button>
+        </div>
+        <input type="file" id="bgFile" accept="image/*" style="display:none">
+      </div>
+
+      <div class="seq-pill on" id="seqPill">
+        <span class="sw"></span>时序开关
+      </div>
+      <button class="big-round on lit" id="btnPowerOn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 3v8"/><path d="M6.3 6.3a8 8 0 1 0 11.4 0"/></svg>
+        <b>开机</b>
+      </button>
+      <button class="big-round shutdown" id="btnPowerOff">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 3v8"/><path d="M6.3 6.3a8 8 0 1 0 11.4 0"/></svg>
+        <b>关机</b>
+      </button>
+    </div>
+  </div>
+
+  <!-- ============ 主体：左列（矩阵控制 + 音频控制） | 右侧环境监测 ============ -->
+  <div class="main-grid">
+
+    <!-- 左列 -->
+    <div class="ctrl-col">
+      <!-- 控制卡：矩阵控制 + 设备控制 并排 -->
+      <div class="ctrl-row">
+        <button class="matrix-card" id="btnMatrix">
+          <span class="sc-ic">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="19" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          </span>
+          <span class="mc-txt"><b>矩阵控制</b></span>
+        </button>
+        <button class="matrix-card" id="btnDevice">
+          <span class="sc-ic">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01"/></svg>
+          </span>
+          <span class="mc-txt"><b>设备控制</b></span>
+        </button>
+      </div>
+
+      <!-- 音频控制：无线话筒 / 有线地插 / 矩阵音频 -->
+      <div class="audio-card" id="audioCard">
+        <div id="audioList" style="flex:1;display:flex;flex-direction:column;gap:clamp(8px,1vw,12px);min-height:0"></div>
+      </div>
+    </div>
+
+    <!-- 右侧：环境监测 -->
+    <div class="env-panel">
+      <div class="env-head"><i></i><b>环境监测</b></div>
+      <div class="env-grid" id="sensorGrid"></div>
+    </div>
+  </div>
+
+  <!-- ============ 右侧详情抽屉面板 ============ -->
+  <div id="panelWrap">
+    <div class="backdrop" id="panelBackdrop"></div>
+    <aside class="panel" id="panel"></aside>
+  </div>
+
+  <div id="toast"></div>
+</div>
+
+<script>
+/* ======================================================
+   设备清单（9 台）：color 提亮提纯的干净配色
+   img: 后期切图填路径（如 "img/temp.png"），填了替换圆徽显示图片
+   ====================================================== */
+const DEVICES = [
+  { key:"temp",  name:"温度",   unit:"°C",   val:24.6, dec:1, min:16, max:32,  step:.5, th:28,  good:[18,28],  color:"#f53f3f", icon:"temp" },   /* arco red-6 */
+  { key:"humi",  name:"湿度",   unit:"%RH",  val:52,   dec:0, min:30, max:80,  step:1,  th:65,  good:[40,65],  color:"#165dff", icon:"humi" },   /* arco blue-6 */
+  { key:"lux",   name:"光照度", unit:"lux",  val:460,  dec:0, min:0,  max:1000,step:10, th:750, good:[0,750],  color:"#f7ba1e", icon:"lux" },    /* arco gold-6 */
+  { key:"pm25",  name:"PM2.5",  unit:"μg/m³",val:18,   dec:0, min:0,  max:150, step:1,  th:75,  good:[0,75],   color:"#14c9c9", icon:"pm25" },   /* arco cyan-6 */
+  { key:"pm10",  name:"PM10",   unit:"μg/m³",val:36,   dec:0, min:0,  max:300, step:1,  th:150, good:[0,150],  color:"#f77234", icon:"pm10" },   /* arco orangered-6 */
+  { key:"co2",   name:"CO2",    unit:"ppm",  val:620,  dec:0, min:300,max:2000,step:10, th:1000,good:[0,1000], color:"#722ed1", icon:"co2" },    /* arco purple-6 */
+  { key:"tvoc",  name:"TVOC",   unit:"mg/m³",val:0.32, dec:2, min:0,  max:3,   step:.02,th:.6,  good:[0,.6],   color:"#f5319d", icon:"tvoc" },   /* arco magenta-6 */
+  { key:"hcho",  name:"甲醛",   unit:"mg/m³",val:0.05, dec:2, min:0,  max:.5,  step:.01,th:.1,  good:[0,.1],   color:"#00b42a", icon:"hcho" },   /* arco green-6 */
+  { key:"noise", name:"噪声",   unit:"dB",   val:42,   dec:0, min:30, max:100, step:1,  th:60,  good:[0,60],   color:"#ff7d00", icon:"noise" }    /* arco orange-6 */
+];
+
+const ICONS = {
+  temp:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 14.76V5a2 2 0 0 0-4 0v9.76a4 4 0 1 0 4 0z"/></svg>`,
+  humi:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg>`,
+  lux:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>`,
+  pm25:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4 4 0 0 1 0-8 5 5 0 0 1 9.6-1.5A3.5 3.5 0 0 1 17 18z"/><circle cx="9" cy="13" r=".7" fill="currentColor" stroke="none"/><circle cx="12" cy="11" r=".7" fill="currentColor" stroke="none"/><circle cx="14.5" cy="14" r=".7" fill="currentColor" stroke="none"/></svg>`,
+  pm10:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4 4 0 0 1 0-8 5 5 0 0 1 9.6-1.5A3.5 3.5 0 0 1 17 18z"/><circle cx="9" cy="13" r="1" fill="currentColor" stroke="none"/><circle cx="13" cy="11" r="1" fill="currentColor" stroke="none"/></svg>`,
+  co2:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="12" r="2.6"/><circle cx="16" cy="8.5" r="2"/><circle cx="16" cy="15.5" r="2"/><path d="M11 11l3-1.8M11 13l3 1.8"/></svg>`,
+  tvoc:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6M10 3v6l-4 9a2 2 0 0 0 2 3h8a2 2 0 0 0 2-3l-4-9V3"/><path d="M7.5 14h9"/></svg>`,
+  hcho:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6M10 3v4l-3 9a2 2 0 0 0 2 3h6a2 2 0 0 0 2-3l-3-9V3"/><path d="M8 13h8"/></svg>`,
+  noise:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18 6a9 9 0 0 1 0 12"/></svg>`
+};
+const IC_CLOCK=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>`;
+const IC_WIFI=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19" r="1" fill="currentColor" stroke="none"/></svg>`;
+const IC_CLOSE=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>`;
+const IC_GEAR=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`;
+const IC_PULSE=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l3-8 4 16 3-8h6"/></svg>`;
+/* 音频/场景 icon */
+const IC_MIC=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v4M9 21h6"/></svg>`;
+const IC_MICOFF=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v4M9 21h6M4 3l16 18"/></svg>`;
+const IC_PLUG=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v6M15 2v6M7 8h10v3a5 5 0 0 1-10 0zM12 16v6"/></svg>`;
+const IC_GRIDM=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg>`;
+const IC_DEVICE=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01"/></svg>`;
+const IC_VOLUP=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M16 12h5M18.5 9.5v5"/></svg>`;
+const IC_VOLDN=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M16 12h5"/></svg>`;
+Object.assign(ICONS,{ mic:IC_MIC, plug:IC_PLUG, grid:IC_GRIDM });
+
+const state = {};
+DEVICES.forEach((d,i)=>{ state[d.key] = { on:true, val:d.val, th:d.th, idx:i }; });
+
+const $ = s=>document.querySelector(s);
+
+/* ======================================================
+   主题配色（Arco Design 色板，下拉切换，整套换肤）
+   每套含：强调色(a/a2) + 背景渐变(bg) + 光晕(g1/g2/g3) + 抽屉背景(p1/p2)
+   开关绿、设备图标色不随主题变
+   ====================================================== */
+const THEMES = [
+  { name:"活力橙", a:"#ff7d00", a2:"#ffcf8b",   /* arco orange-6 */
+    bg:["#fff8f0","#ffefd9","#ffe9cb"],
+    g1:"rgba(255,196,120,.55)", g2:"rgba(255,178,120,.5)", g3:"rgba(255,248,240,.55)",
+    p1:"#fffdf9", p2:"#fff5e8" },
+  { name:"海蔚蓝", a:"#165dff", a2:"#94bfff",   /* arco blue-6 */
+    bg:["#f2f6ff","#e4edff","#d6e4ff"],
+    g1:"rgba(148,191,255,.5)", g2:"rgba(170,205,255,.5)", g3:"rgba(240,246,255,.6)",
+    p1:"#fbfdff", p2:"#eff5ff" },
+  { name:"仙野绿", a:"#00b42a", a2:"#8ce99a",   /* arco green-6 */
+    bg:["#f0fbf2","#dff5e3","#d0efd7"],
+    g1:"rgba(140,233,154,.5)", g2:"rgba(160,235,180,.45)", g3:"rgba(240,251,242,.6)",
+    p1:"#fafefb", p2:"#edf9f0" },
+  { name:"碧涛青", a:"#14c9c9", a2:"#8ce8e8",   /* arco cyan-6 */
+    bg:["#effcfc","#def6f6","#cdefef"],
+    g1:"rgba(140,232,232,.5)", g2:"rgba(160,238,238,.45)", g3:"rgba(240,252,252,.6)",
+    p1:"#fafeff", p2:"#eaf8f8" },
+  { name:"暗夜紫", a:"#722ed1", a2:"#c3a6ff",   /* arco purple-6 */
+    bg:["#f7f4fe","#ebe3fc","#dfd3f9"],
+    g1:"rgba(195,166,255,.5)", g2:"rgba(210,190,255,.45)", g3:"rgba(246,243,255,.6)",
+    p1:"#fcfaff", p2:"#f3edfe" },
+  { name:"品红",   a:"#f5319d", a2:"#f9a9d4",   /* arco magenta-6 */
+    bg:["#fef4f9","#fbe3ef","#f7d6e6"],
+    g1:"rgba(249,169,212,.5)", g2:"rgba(250,190,220,.45)", g3:"rgba(255,244,250,.6)",
+    p1:"#fffafc", p2:"#fbeaf3" },
+  { name:"法院",   a:"#9e2b25", a2:"#c8a45c",   /* 司法红 + 法徽金 */
+    bg:["#faf7f2","#f3ece1","#ebe0d1"],
+    g1:"rgba(200,164,92,.45)", g2:"rgba(158,43,37,.32)", g3:"rgba(250,247,242,.6)",
+    p1:"#fdfbf7", p2:"#f6f0e6" }
+];
+function applyTheme(i){
+  const t = THEMES[i] || THEMES[0];
+  const r = document.documentElement.style;
+  r.setProperty("--accent", t.a);
+  r.setProperty("--accent-2", t.a2);
+  r.setProperty("--bg1", t.bg[0]);
+  r.setProperty("--bg2", t.bg[1]);
+  r.setProperty("--bg3", t.bg[2]);
+  r.setProperty("--glow1", t.g1);
+  r.setProperty("--glow2", t.g2);
+  r.setProperty("--glow3", t.g3);
+  r.setProperty("--panel1", t.p1);
+  r.setProperty("--panel2", t.p2);
+  $("#themeCurDot").style.background = `linear-gradient(135deg,${t.a2},${t.a})`;
+  $("#themeCurName").textContent = t.name;
+  document.documentElement.dataset.theme = t.name;   /* 主题专属背景装饰层开关 */
+  document.querySelectorAll(".theme-item").forEach((el,k)=>el.classList.toggle("active", k===i));
+  try{ localStorage.setItem("envTheme", i); }catch(e){}
+}
+(function initThemes(){
+  const menu = $("#themeMenu"), dd = $("#themeDD");
+  THEMES.forEach((t,i)=>{
+    const b = document.createElement("button");
+    b.className = "theme-item";
+    b.innerHTML = `<span class="theme-cur" style="background:linear-gradient(135deg,${t.a2},${t.a})"></span>${t.name}
+      <svg class="chk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>`;
+    b.addEventListener("click", ()=>{ applyTheme(i); dd.classList.remove("open"); toast("已切换主题：" + t.name); });
+    menu.appendChild(b);
+  });
+  $("#themeBtn").addEventListener("click", e=>{ e.stopPropagation(); dd.classList.toggle("open"); });
+  document.addEventListener("click", e=>{ if(!dd.contains(e.target)) dd.classList.remove("open"); });
+  let saved = 0;
+  try{ saved = parseInt(localStorage.getItem("envTheme")) || 0; }catch(e){}
+  applyTheme(saved);
+})();
+
+/* ======================================================
+   自定义背景：上传 / 移除（localStorage 记忆，超大图仅本次会话生效）
+   ====================================================== */
+(function initBg(){
+  const dd=$("#bgDD"), btn=$("#bgBtn"), file=$("#bgFile"), layer=$("#bgCustom");
+  const setBg=url=>{
+    layer.style.backgroundImage = url ? `url("${url}")` : "";
+    layer.classList.toggle("on", !!url);
+    dd.classList.toggle("has-bg", !!url);
+  };
+  btn.addEventListener("click",e=>{ e.stopPropagation(); dd.classList.toggle("open"); });
+  document.addEventListener("click",e=>{ if(!dd.contains(e.target)) dd.classList.remove("open"); });
+  $("#bgUpload").addEventListener("click",()=>file.click());
+  $("#bgRemove").addEventListener("click",()=>{
+    setBg(""); try{ localStorage.removeItem("envBg"); }catch(e){}
+    dd.classList.remove("open"); toast("已移除自定义背景");
+  });
+  file.addEventListener("change",()=>{
+    const f=file.files && file.files[0]; if(!f) return;
+    const r=new FileReader();
+    r.onload=()=>{
+      setBg(r.result);
+      dd.classList.remove("open");
+      try{ localStorage.setItem("envBg", r.result); toast("背景已更新"); }
+      catch(e){ toast("背景已更新（图片较大，仅本次会话生效）"); }
+    };
+    r.readAsDataURL(f);
+    file.value="";
+  });
+  try{ const saved=localStorage.getItem("envBg"); if(saved) setBg(saved); }catch(e){}
+})();
+function toast(msg){
+  const t=$("#toast"); t.textContent=msg; t.classList.add("show");
+  clearTimeout(t._tm); t._tm=setTimeout(()=>t.classList.remove("show"),1600);
+}
+function level(d,v){ return v<=d.good[1] ? "good" : (v<=d.th ? "warn" : "bad"); }
+const LVL_TXT={good:"运行正常",warn:"数值偏高",bad:"超过阈值",off:"已停用"};
+
+function rgba(hex,a){
+  const n=parseInt(hex.slice(1),16);
+  return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`;
+}
+function shade(hex,f){       /* 变暗用于渐变 */
+  const n=parseInt(hex.slice(1),16);
+  const r=Math.round((n>>16&255)*f), g=Math.round((n>>8&255)*f), b=Math.round((n&255)*f);
+  return `rgb(${r},${g},${b})`;
+}
+/* 圆徽：默认=淡色彩标；点亮=实色渐变底+白标（干净不脏）*/
+function badge(d,on,cls){
+  if(d.img) return `<div class="media"><img src="${d.img}" alt="${d.name}" style="max-width:68%;max-height:68%;object-fit:contain"></div>`;
+  return `<span class="ic-badge ${on?"on":""} ${cls||""}" style="
+    --c:${d.color};--cd:${shade(d.color,.85)};
+    --cbg:${rgba(d.color,.15)};--cborder:${rgba(d.color,.32)};--cglow:${rgba(d.color,.38)}">${ICONS[d.icon]}</span>`;
+}
+function tagOf(d){
+  if(!state[d.key].on) return `<span class="tag off">已停用</span>`;
+  const lv=level(d,state[d.key].val);
+  return `<span class="tag ${lv}">${LVL_TXT[lv]}</span>`;
+}
+
+/* ---------- 环境监测卡片 ---------- */
+function renderHome(){
+  $("#sensorGrid").innerHTML = DEVICES.map((d,i)=>{
+    const s=state[d.key];
+    return `<div class="card ${s.on?"":"off"}" data-key="${d.key}" style="animation-delay:${i*55}ms">
+      <div class="row1"><span class="type">环境传感</span>${tagOf(d)}</div>
+      <div class="media">${badge(d,s.on)}</div>
+      <div class="dev-name">${d.name}</div>
+      <div class="val" style="margin-top:clamp(4px,.7vw,8px)">${s.on?s.val.toFixed(d.dec):"--"}<small>${d.unit}</small></div>
+      <div class="foot">
+        <span>${IC_WIFI}阈值 ${d.th}</span>
+      </div>
+    </div>`;
+  }).join("");
+  document.querySelectorAll("#sensorGrid .card").forEach(c=>{
+    c.addEventListener("click",()=>openPanel(c.dataset.key));
+  });
+}
+
+/* ---------- 控制区：矩阵 + 音频三路（合并单页布局）---------- */
+const AUDIO=[
+  { key:"mic",  name:"无线话筒", color:"#f53f3f", icon:"mic"  },   /* arco red-6 */
+  { key:"floor",name:"有线地插", color:"#165dff", icon:"plug" },   /* arco blue-6 */
+  { key:"mtx",  name:"矩阵音频", color:"#14c9c9", icon:"grid" }    /* arco cyan-6 */
+];
+const audioState={ sysOn:true, seqOn:true,
+  ch:{ mic:{muted:false,vol:40}, floor:{muted:false,vol:55}, mtx:{muted:false,vol:35} } };
+
+function renderCtrl(){
+  const A=audioState;
+  $("#audioList").innerHTML=AUDIO.map(d=>{
+    const ch=A.ch[d.key];
+    return `<div class="audio-col ${ch.muted?"muted":""}">
+      <div class="ac-head">${badge(d,true)}<b>${d.name}</b></div>
+      <div class="ac-div"></div>
+      <div class="ac-btns">
+        <button class="abtn b-warn ${ch.muted?'on':''}" data-act="mute" data-key="${d.key}">${IC_MICOFF}静音</button>
+        <button class="abtn b-unmute ${!ch.muted?'on':''}" data-act="unmute" data-key="${d.key}">${IC_MIC}取消</button>
+        <button class="abtn b-acc" data-act="volup" data-key="${d.key}">${IC_VOLUP}音量 +</button>
+        <button class="abtn b-acc" data-act="voldn" data-key="${d.key}">${IC_VOLDN}音量 −</button>
+      </div>
+    </div>`;
+  }).join("");
+  $("#audioCard").classList.toggle("off",!A.sysOn);
+  $("#btnPowerOn").classList.toggle("lit",A.sysOn);
+  $("#btnPowerOn").classList.toggle("dim",!A.sysOn);
+  $("#btnPowerOff").classList.toggle("lit-red",!A.sysOn);
+  $("#btnPowerOff").classList.toggle("dim",A.sysOn);
+  $("#btnMatrix").classList.toggle("off-mode",!A.sysOn);
+  $("#btnDevice").classList.toggle("off-mode",!A.sysOn);
+  $("#seqPill").classList.toggle("on",A.seqOn);
+  $("#seqPill").classList.toggle("dis",!A.sysOn);
+}
+/* 音频按钮事件（委托，重渲染不丢）*/
+$("#audioList").addEventListener("click",e=>{
+  const b=e.target.closest(".abtn"); if(!b) return;
+  const act=b.dataset.act, k=b.dataset.key;
+  const ch=audioState.ch[k], name=AUDIO.find(x=>x.key===k).name;
+  if(act==="mute"){
+    ch.muted=true;
+    toast(name+" 已静音");
+  }
+  else if(act==="unmute"){
+    ch.muted=false;
+    toast(name+" 已取消静音");
+  }
+  else if(act==="volup"){ ch.vol=Math.min(100,ch.vol+5); toast(name+" 音量："+ch.vol); }
+  else if(act==="voldn"){ ch.vol=Math.max(0,ch.vol-5); toast(name+" 音量："+ch.vol); }
+  renderCtrl();
+});
+/* 时序开关 */
+$("#seqPill").addEventListener("click",()=>{
+  if(!audioState.sysOn) return toast("设备已关机，无法操作电源时序");
+  audioState.seqOn=!audioState.seqOn;
+  renderCtrl();
+  toast(audioState.seqOn?"电源时序已开启：顺序供电 · 延迟保护":"电源时序已关闭");
+});
+/* 开关机 */
+$("#btnPowerOn").addEventListener("click",()=>{
+  if(audioState.sysOn) return toast("设备已在运行中");
+  audioState.sysOn=true;
+  Object.values(audioState.ch).forEach(c=>c.muted=false);
+  renderCtrl(); toast("设备已开机，系统运行中");
+});
+$("#btnPowerOff").addEventListener("click",()=>{
+  if(!audioState.sysOn) return toast("设备已处于关机状态");
+  audioState.sysOn=false; renderCtrl(); toast("设备已安全关机");
+});
+/* 矩阵控制 */
+$("#btnMatrix").addEventListener("click",()=>{
+  if(!audioState.sysOn) return toast("设备已关机，无法切换信号");
+  toast("矩阵控制：信号已切换至大屏");
+});
+/* 设备控制 */
+$("#btnDevice").addEventListener("click",()=>{
+  if(!audioState.sysOn) return toast("设备已关机，无法进行设备控制");
+  toast("设备控制：一键管控会议室设备");
+});
+function renderAll(){
+  renderHome(); renderCtrl();
+  if(panelKey) fillPanel(panelKey);
+}
+
+/* ---------- 右侧详情抽屉面板 ---------- */
+let panelKey=null;
+function openPanel(key){ panelKey=key; fillPanel(key); $("#panelWrap").classList.add("open"); }
+function closePanel(){ panelKey=null; $("#panelWrap").classList.remove("open"); }
+function fillPanel(key){
+  const d=DEVICES.find(x=>x.key===key), s=state[key];
+  const lv=level(d,s.val);
+  const pct=((s.th-d.min)/(d.max-d.min)*100).toFixed(1);
+  $("#panel").innerHTML=`
+    <div class="panel-head">
+      <h3>${d.name}传感器</h3>
+      <button class="panel-close" id="panelClose">${IC_CLOSE}</button>
+    </div>
+    <div class="panel-meta">
+      <span class="on-tag ${s.on?"":"off"}">${s.on?"在线":"离线"}</span>
+      <span>ID : SENSOR_${d.key.toUpperCase()}_00${s.idx+1}</span>
+    </div>
+    <div class="panel-hero">${badge(d,s.on)}</div>
+    <div class="panel-body">
+      <div class="sec-title">${IC_GEAR}设备控制</div>
+      <div class="panel-rows">
+        <div class="prow"><span class="lbl"><i></i>设备开关</span>
+          <button class="switch ${s.on?"on":""}" id="pSwitch"></button></div>
+      </div>
+      <div>
+        <div class="p-slider-lbl"><span class="lbl" style="display:flex;align-items:center;gap:8px"><i style="width:3px;height:14px;border-radius:2px;background:var(--accent);display:inline-block"></i>告警阈值设置</span><b>${s.th} ${d.unit}</b></div>
+        <input type="range" class="range" id="pRange" ${!s.on?"disabled":""}
+          min="${d.min}" max="${d.max}" step="${d.step}" value="${s.th}" style="--fill:${pct}%">
+      </div>
+      <div class="p-cards">
+        <div class="p-card" style="background:${rgba(d.color,.1)};border:1px solid ${rgba(d.color,.25)}">
+          当前数值<b>${s.on?s.val.toFixed(d.dec):"--"}<small>${d.unit}</small></b></div>
+        <div class="p-card" style="background:rgba(0,178,42,.08);border:1px solid rgba(0,178,42,.2)">
+          运行时长<b>128<small>小时</small></b></div>
+      </div>
+      <div class="sec-title">${IC_PULSE}运行状态</div>
+      <div class="panel-rows">
+        <div class="prow"><span class="lbl"><i></i>工作电压</span><b>220 伏</b></div>
+        <div class="prow"><span class="lbl"><i></i>信号强度</span><b>-59 dBm</b></div>
+        <div class="prow"><span class="lbl"><i></i>当前状态</span>
+          <b style="color:${s.on?({good:"var(--good)",warn:"var(--warn)",bad:"var(--bad)"}[lv]):"var(--ink-2)"}">${s.on?LVL_TXT[lv]:"已停用"}</b></div>
+      </div>
+      <div class="sec-title">${IC_CLOCK}设备信息</div>
+      <div class="panel-rows">
+        <div class="prow"><span>固件版本</span><b>v2.5.1</b></div>
+        <div class="prow"><span>最后上线</span><b>今天 14:10</b></div>
+        <div class="prow"><span>安装位置</span><b>会议室天花板</b></div>
+      </div>
+      <div class="panel-save"><button id="pSave">保存设置</button></div>
+    </div>`;
+
+  $("#panelClose").addEventListener("click",closePanel);
+  $("#pSwitch").addEventListener("click",()=>{
+    state[key].on=!state[key].on;
+    renderAll();
+    toast(d.name+(state[key].on?" 已启用":" 已停用"));
+  });
+  const pr=$("#pRange");
+  pr.addEventListener("input",()=>{
+    state[key].th=parseFloat(pr.value);
+    pr.style.setProperty("--fill",((state[key].th-d.min)/(d.max-d.min)*100)+"%");
+    pr.closest(".panel-body").querySelector(".p-slider-lbl b").textContent=state[key].th+" "+d.unit;
+  });
+  pr.addEventListener("change",()=>toast("告警阈值已保存"));
+  $("#pSave").addEventListener("click",()=>{ renderAll(); toast("设置已保存"); });
+}
+$("#panelBackdrop").addEventListener("click",closePanel);
+
+/* ---------- 时钟 ---------- */
+function tick(){
+  const n=new Date(), p=v=>String(v).padStart(2,"0");
+  $("#clockT").textContent = p(n.getHours())+":"+p(n.getMinutes());
+  $("#clockD").textContent = n.getFullYear()+"年"+p(n.getMonth()+1)+"月"+p(n.getDate())+"日 星期"+"日一二三四五六"[n.getDay()];
+}
+setInterval(tick,1000); tick();
+
+/* ---------- 数据模拟 ---------- */
+setInterval(()=>{
+  DEVICES.forEach(d=>{
+    const s=state[d.key];
+    const jitter=(Math.random()-.5)*(d.max-d.min)*.004;
+    s.val=Math.min(d.max,Math.max(d.min,s.val+jitter));
+  });
+},3000);
+setInterval(()=>{
+  document.querySelectorAll("#sensorGrid .card").forEach(c=>{
+    const d=DEVICES.find(x=>x.key===c.dataset.key), s=state[d.key];
+    c.querySelector(".val").innerHTML=(s.on?s.val.toFixed(d.dec):"--")+"<small>"+d.unit+"</small>";
+    const old=c.querySelector(".tag");
+    if(old) old.replaceWith(Object.assign(document.createElement("template"),{innerHTML:tagOf(d)}).content);
+  });
+},1000);
+
+renderHome();
+renderCtrl();
+</script>
+</body>
+</html>
